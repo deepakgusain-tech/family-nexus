@@ -24,6 +24,8 @@ interface LayoutNode {
 interface LayoutLink {
   source: { x: number; y: number };
   target: { x: number; y: number };
+  sourceId: string;
+  targetId: string;
   type: 'current' | 'ex' | 'child';
 }
 
@@ -101,6 +103,8 @@ function computeLinks(node: FamilyNode, nodes: LayoutNode[], links: LayoutLink[]
     links.push({
       source: { x: leftNode.x + NODE_W, y: leftNode.y + NODE_H / 2 },
       target: { x: rightNode.x, y: rightNode.y + NODE_H / 2 },
+      sourceId: node.id,
+      targetId: spouse.id,
       type: spouse.type,
     });
   });
@@ -111,10 +115,27 @@ function computeLinks(node: FamilyNode, nodes: LayoutNode[], links: LayoutLink[]
     links.push({
       source: { x: personNode.x + NODE_W / 2, y: personNode.y + NODE_H },
       target: { x: childNode.x + NODE_W / 2, y: childNode.y },
+      sourceId: node.id,
+      targetId: child.id,
       type: 'child',
     });
     computeLinks(child, nodes, links);
   });
+}
+
+// Find ancestor path from root to a target node
+function findAncestorPath(node: FamilyNode, targetId: string): string[] | null {
+  if (node.id === targetId) return [node.id];
+  // Check spouses
+  for (const spouse of node.spouses) {
+    if (spouse.id === targetId) return [node.id, spouse.id];
+  }
+  // Check children recursively
+  for (const child of node.children) {
+    const path = findAncestorPath(child, targetId);
+    if (path) return [node.id, ...path];
+  }
+  return null;
 }
 
 const TreeVisualization: React.FC<TreeVisualizationProps> = ({ data, onNodeClick, selectedId }) => {
@@ -129,6 +150,12 @@ const TreeVisualization: React.FC<TreeVisualizationProps> = ({ data, onNodeClick
     placeNodes(data, 50, 50, nodes);
     computeLinks(data, nodes, links);
 
+    // Compute ancestor path for selected node
+    const ancestorPath = new Set<string>();
+    if (selectedId) {
+      const path = findAncestorPath(data, selectedId);
+      if (path) path.forEach(id => ancestorPath.add(id));
+    }
     const maxX = Math.max(...nodes.map(n => n.x + NODE_W)) + 100;
     const maxY = Math.max(...nodes.map(n => n.y + NODE_H)) + 100;
 
@@ -158,13 +185,14 @@ const TreeVisualization: React.FC<TreeVisualizationProps> = ({ data, onNodeClick
     const linkGroup = g.append('g').attr('class', 'links');
 
     links.forEach(link => {
+      const isOnPath = ancestorPath.has(link.sourceId) && ancestorPath.has(link.targetId);
       if (link.type === 'child') {
         const midY = (link.source.y + link.target.y) / 2;
         linkGroup.append('path')
           .attr('d', `M${link.source.x},${link.source.y} L${link.source.x},${midY} L${link.target.x},${midY} L${link.target.x},${link.target.y}`)
           .attr('fill', 'none')
-          .attr('stroke', 'hsl(220, 15%, 30%)')
-          .attr('stroke-width', 2);
+          .attr('stroke', isOnPath ? 'hsl(48, 95%, 55%)' : 'hsl(220, 15%, 30%)')
+          .attr('stroke-width', isOnPath ? 3.5 : 2);
       } else {
         linkGroup.append('line')
           .attr('x1', link.source.x)
@@ -187,11 +215,13 @@ const TreeVisualization: React.FC<TreeVisualizationProps> = ({ data, onNodeClick
         .on('click', () => onNodeClick(node.id, node.type));
 
       const isSelected = node.id === selectedId;
+      const isOnPath = ancestorPath.has(node.id);
 
-      // Node colors
+      // Node colors - highlight ancestor path with golden glow
       let fillColor = 'hsl(210, 60%, 50%)'; // male
       if (node.gender === 'female') fillColor = 'hsl(330, 60%, 55%)';
       if (node.spouseType === 'ex') fillColor = 'hsl(0, 40%, 40%)';
+      if (isOnPath) fillColor = 'hsl(48, 90%, 45%)'; // golden highlight for path
 
       // Shadow
       group.append('rect')
@@ -200,7 +230,7 @@ const TreeVisualization: React.FC<TreeVisualizationProps> = ({ data, onNodeClick
         .attr('width', NODE_W)
         .attr('height', NODE_H)
         .attr('rx', 10)
-        .attr('fill', 'rgba(0,0,0,0.3)');
+        .attr('fill', isOnPath ? 'rgba(234, 179, 8, 0.4)' : 'rgba(0,0,0,0.3)');
 
       // Main rect
       group.append('rect')
@@ -208,9 +238,9 @@ const TreeVisualization: React.FC<TreeVisualizationProps> = ({ data, onNodeClick
         .attr('height', NODE_H)
         .attr('rx', 10)
         .attr('fill', fillColor)
-        .attr('stroke', isSelected ? 'hsl(38, 75%, 55%)' : 'hsl(220, 15%, 25%)')
-        .attr('stroke-width', isSelected ? 3 : 1.5)
-        .attr('opacity', 0.95);
+        .attr('stroke', isSelected ? 'hsl(38, 75%, 55%)' : isOnPath ? 'hsl(48, 90%, 60%)' : 'hsl(220, 15%, 25%)')
+        .attr('stroke-width', isSelected ? 3 : isOnPath ? 2.5 : 1.5)
+        .attr('opacity', ancestorPath.size > 0 && !isOnPath ? 0.4 : 0.95);
 
       // Name text
       group.append('text')
