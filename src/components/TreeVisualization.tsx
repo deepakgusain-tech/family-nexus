@@ -18,6 +18,7 @@ interface LayoutNode {
   type: 'person' | 'spouse';
   spouseType?: 'current' | 'ex';
   parentId?: string;
+  level: number;
 }
 
 interface LayoutLink {
