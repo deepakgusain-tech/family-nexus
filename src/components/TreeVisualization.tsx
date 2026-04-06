@@ -150,6 +150,12 @@ const TreeVisualization: React.FC<TreeVisualizationProps> = ({ data, onNodeClick
     placeNodes(data, 50, 50, nodes);
     computeLinks(data, nodes, links);
 
+    // Compute ancestor path for selected node
+    const ancestorPath = new Set<string>();
+    if (selectedId) {
+      const path = findAncestorPath(data, selectedId);
+      if (path) path.forEach(id => ancestorPath.add(id));
+    }
     const maxX = Math.max(...nodes.map(n => n.x + NODE_W)) + 100;
     const maxY = Math.max(...nodes.map(n => n.y + NODE_H)) + 100;
 
