@@ -215,11 +215,13 @@ const TreeVisualization: React.FC<TreeVisualizationProps> = ({ data, onNodeClick
         .on('click', () => onNodeClick(node.id, node.type));
 
       const isSelected = node.id === selectedId;
+      const isOnPath = ancestorPath.has(node.id);
 
-      // Node colors
+      // Node colors - highlight ancestor path with golden glow
       let fillColor = 'hsl(210, 60%, 50%)'; // male
       if (node.gender === 'female') fillColor = 'hsl(330, 60%, 55%)';
       if (node.spouseType === 'ex') fillColor = 'hsl(0, 40%, 40%)';
+      if (isOnPath) fillColor = 'hsl(48, 90%, 45%)'; // golden highlight for path
 
       // Shadow
       group.append('rect')
@@ -228,7 +230,7 @@ const TreeVisualization: React.FC<TreeVisualizationProps> = ({ data, onNodeClick
         .attr('width', NODE_W)
         .attr('height', NODE_H)
         .attr('rx', 10)
-        .attr('fill', 'rgba(0,0,0,0.3)');
+        .attr('fill', isOnPath ? 'rgba(234, 179, 8, 0.4)' : 'rgba(0,0,0,0.3)');
 
       // Main rect
       group.append('rect')
@@ -236,9 +238,9 @@ const TreeVisualization: React.FC<TreeVisualizationProps> = ({ data, onNodeClick
         .attr('height', NODE_H)
         .attr('rx', 10)
         .attr('fill', fillColor)
-        .attr('stroke', isSelected ? 'hsl(38, 75%, 55%)' : 'hsl(220, 15%, 25%)')
-        .attr('stroke-width', isSelected ? 3 : 1.5)
-        .attr('opacity', 0.95);
+        .attr('stroke', isSelected ? 'hsl(38, 75%, 55%)' : isOnPath ? 'hsl(48, 90%, 60%)' : 'hsl(220, 15%, 25%)')
+        .attr('stroke-width', isSelected ? 3 : isOnPath ? 2.5 : 1.5)
+        .attr('opacity', ancestorPath.size > 0 && !isOnPath ? 0.4 : 0.95);
 
       // Name text
       group.append('text')
