@@ -33,7 +33,7 @@ const H_GAP = 40;
 const V_GAP = 120;
 const SPOUSE_GAP = 20;
 
-function placeNodes(node: FamilyNode, x: number, y: number, nodes: LayoutNode[]): number {
+function placeNodes(node: FamilyNode, x: number, y: number, nodes: LayoutNode[], level: number = 0): number {
   const spouseCount = node.spouses.length;
   const currentWives = node.spouses.filter(s => s.type === 'current');
   const exWives = node.spouses.filter(s => s.type === 'ex');
@@ -42,7 +42,7 @@ function placeNodes(node: FamilyNode, x: number, y: number, nodes: LayoutNode[])
 
   nodes.push({
     id: node.id, name: node.name, gender: node.gender, birthYear: node.birthYear,
-    x: personX, y, type: 'person',
+    x: personX, y, type: 'person', level,
   });
 
   currentWives.forEach((spouse, i) => {
