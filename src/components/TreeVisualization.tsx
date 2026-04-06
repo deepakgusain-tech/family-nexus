@@ -117,6 +117,21 @@ function computeLinks(node: FamilyNode, nodes: LayoutNode[], links: LayoutLink[]
   });
 }
 
+// Find ancestor path from root to a target node
+function findAncestorPath(node: FamilyNode, targetId: string): string[] | null {
+  if (node.id === targetId) return [node.id];
+  // Check spouses
+  for (const spouse of node.spouses) {
+    if (spouse.id === targetId) return [node.id, spouse.id];
+  }
+  // Check children recursively
+  for (const child of node.children) {
+    const path = findAncestorPath(child, targetId);
+    if (path) return [node.id, ...path];
+  }
+  return null;
+}
+
 const TreeVisualization: React.FC<TreeVisualizationProps> = ({ data, onNodeClick, selectedId }) => {
   const svgRef = useRef<SVGSVGElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
