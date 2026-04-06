@@ -48,14 +48,14 @@ function placeNodes(node: FamilyNode, x: number, y: number, nodes: LayoutNode[],
   currentWives.forEach((spouse, i) => {
     nodes.push({
       id: spouse.id, name: spouse.name, gender: spouse.gender, birthYear: spouse.birthYear,
-      x: personX - (i + 1) * (NODE_W + SPOUSE_GAP), y, type: 'spouse', spouseType: 'current', parentId: node.id,
+      x: personX - (i + 1) * (NODE_W + SPOUSE_GAP), y, type: 'spouse', spouseType: 'current', parentId: node.id, level,
     });
   });
 
   exWives.forEach((spouse, i) => {
     nodes.push({
       id: spouse.id, name: spouse.name, gender: spouse.gender, birthYear: spouse.birthYear,
-      x: personX + NODE_W + SPOUSE_GAP + i * (NODE_W + SPOUSE_GAP), y, type: 'spouse', spouseType: 'ex', parentId: node.id,
+      x: personX + NODE_W + SPOUSE_GAP + i * (NODE_W + SPOUSE_GAP), y, type: 'spouse', spouseType: 'ex', parentId: node.id, level,
     });
   });
 
