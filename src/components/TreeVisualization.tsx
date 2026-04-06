@@ -103,6 +103,8 @@ function computeLinks(node: FamilyNode, nodes: LayoutNode[], links: LayoutLink[]
     links.push({
       source: { x: leftNode.x + NODE_W, y: leftNode.y + NODE_H / 2 },
       target: { x: rightNode.x, y: rightNode.y + NODE_H / 2 },
+      sourceId: node.id,
+      targetId: spouse.id,
       type: spouse.type,
     });
   });
@@ -113,6 +115,8 @@ function computeLinks(node: FamilyNode, nodes: LayoutNode[], links: LayoutLink[]
     links.push({
       source: { x: personNode.x + NODE_W / 2, y: personNode.y + NODE_H },
       target: { x: childNode.x + NODE_W / 2, y: childNode.y },
+      sourceId: node.id,
+      targetId: child.id,
       type: 'child',
     });
     computeLinks(child, nodes, links);
