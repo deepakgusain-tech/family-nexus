@@ -24,6 +24,8 @@ interface LayoutNode {
 interface LayoutLink {
   source: { x: number; y: number };
   target: { x: number; y: number };
+  sourceId: string;
+  targetId: string;
   type: 'current' | 'ex' | 'child';
 }
 
