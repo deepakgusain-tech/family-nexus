@@ -32,71 +32,33 @@ const H_GAP = 40;
 const V_GAP = 120;
 const SPOUSE_GAP = 20;
 
-function computeLayout(node: FamilyNode, x: number, y: number, nodes: LayoutNode[], links: LayoutLink[]): number {
-  // Calculate total width needed for this family unit
+function placeNodes(node: FamilyNode, x: number, y: number, nodes: LayoutNode[]): number {
   const spouseCount = node.spouses.length;
-  const unitWidth = NODE_W + spouseCount * (NODE_W + SPOUSE_GAP);
-
-  // Place the person node
   const currentWives = node.spouses.filter(s => s.type === 'current');
   const exWives = node.spouses.filter(s => s.type === 'ex');
 
-  // Person center x
   const personX = x + currentWives.length * (NODE_W + SPOUSE_GAP);
 
   nodes.push({
-    id: node.id,
-    name: node.name,
-    gender: node.gender,
-    birthYear: node.birthYear,
-    x: personX,
-    y,
-    type: 'person',
+    id: node.id, name: node.name, gender: node.gender, birthYear: node.birthYear,
+    x: personX, y, type: 'person',
   });
 
-  // Place current wives to the left
   currentWives.forEach((spouse, i) => {
-    const sx = personX - (i + 1) * (NODE_W + SPOUSE_GAP);
     nodes.push({
-      id: spouse.id,
-      name: spouse.name,
-      gender: spouse.gender,
-      birthYear: spouse.birthYear,
-      x: sx,
-      y,
-      type: 'spouse',
-      spouseType: 'current',
-      parentId: node.id,
-    });
-    links.push({
-      source: { x: sx + NODE_W, y: y + NODE_H / 2 },
-      target: { x: personX, y: y + NODE_H / 2 },
-      type: 'current',
+      id: spouse.id, name: spouse.name, gender: spouse.gender, birthYear: spouse.birthYear,
+      x: personX - (i + 1) * (NODE_W + SPOUSE_GAP), y, type: 'spouse', spouseType: 'current', parentId: node.id,
     });
   });
 
-  // Place ex-wives to the right
   exWives.forEach((spouse, i) => {
-    const sx = personX + NODE_W + SPOUSE_GAP + i * (NODE_W + SPOUSE_GAP);
     nodes.push({
-      id: spouse.id,
-      name: spouse.name,
-      gender: spouse.gender,
-      birthYear: spouse.birthYear,
-      x: sx,
-      y,
-      type: 'spouse',
-      spouseType: 'ex',
-      parentId: node.id,
-    });
-    links.push({
-      source: { x: personX + NODE_W, y: y + NODE_H / 2 },
-      target: { x: sx, y: y + NODE_H / 2 },
-      type: 'ex',
+      id: spouse.id, name: spouse.name, gender: spouse.gender, birthYear: spouse.birthYear,
+      x: personX + NODE_W + SPOUSE_GAP + i * (NODE_W + SPOUSE_GAP), y, type: 'spouse', spouseType: 'ex', parentId: node.id,
     });
   });
 
-  // Layout children
+  const unitWidth = NODE_W + spouseCount * (NODE_W + SPOUSE_GAP);
   if (node.children.length === 0) return unitWidth;
 
   const childY = y + NODE_H + V_GAP;
@@ -104,45 +66,54 @@ function computeLayout(node: FamilyNode, x: number, y: number, nodes: LayoutNode
   const childWidths: number[] = [];
 
   node.children.forEach(child => {
-    const w = computeLayout(child, childX, childY, nodes, links);
+    const w = placeNodes(child, childX, childY, nodes);
     childWidths.push(w);
     childX += w + H_GAP;
   });
 
   const totalChildrenWidth = childWidths.reduce((a, b) => a + b, 0) + (node.children.length - 1) * H_GAP;
-
-  // Center children under parent
   const parentCenterX = personX + NODE_W / 2;
   const childrenCenterX = x + totalChildrenWidth / 2;
   const offset = parentCenterX - childrenCenterX;
 
   if (offset !== 0) {
-    // Shift all child nodes
-    const shiftNodes = (n: FamilyNode) => {
-      const found = nodes.filter(ln => ln.id === n.id || n.spouses.some(s => s.id === ln.id));
-      found.forEach(ln => { ln.x += offset; });
-      // Also shift links connected to these nodes
-      n.children.forEach(shiftNodes);
+    const collectIds = (n: FamilyNode): string[] => {
+      const ids = [n.id, ...n.spouses.map(s => s.id)];
+      n.children.forEach(c => ids.push(...collectIds(c)));
+      return ids;
     };
-    node.children.forEach(shiftNodes);
-
-    // Shift links too
-    links.forEach(link => {
-      // We'll just recompute links after all nodes are placed
-    });
+    const idsToShift = new Set(node.children.flatMap(collectIds));
+    nodes.forEach(n => { if (idsToShift.has(n.id)) n.x += offset; });
   }
 
-  // Add parent-to-child links
-  node.children.forEach(child => {
-    const childNode = nodes.find(n => n.id === child.id)!;
+  return Math.max(unitWidth, totalChildrenWidth + (offset > 0 ? offset : 0));
+}
+
+function computeLinks(node: FamilyNode, nodes: LayoutNode[], links: LayoutLink[]) {
+  const personNode = nodes.find(n => n.id === node.id)!;
+
+  // Spouse links
+  node.spouses.forEach(spouse => {
+    const spouseNode = nodes.find(n => n.id === spouse.id)!;
+    const leftNode = spouseNode.x < personNode.x ? spouseNode : personNode;
+    const rightNode = spouseNode.x < personNode.x ? personNode : spouseNode;
     links.push({
-      source: { x: parentCenterX, y: y + NODE_H },
-      target: { x: childNode.x + NODE_W / 2, y: childY },
-      type: 'child',
+      source: { x: leftNode.x + NODE_W, y: leftNode.y + NODE_H / 2 },
+      target: { x: rightNode.x, y: rightNode.y + NODE_H / 2 },
+      type: spouse.type,
     });
   });
 
-  return Math.max(unitWidth, totalChildrenWidth + (offset > 0 ? offset : 0));
+  // Child links
+  node.children.forEach(child => {
+    const childNode = nodes.find(n => n.id === child.id)!;
+    links.push({
+      source: { x: personNode.x + NODE_W / 2, y: personNode.y + NODE_H },
+      target: { x: childNode.x + NODE_W / 2, y: childNode.y },
+      type: 'child',
+    });
+    computeLinks(child, nodes, links);
+  });
 }
 
 const TreeVisualization: React.FC<TreeVisualizationProps> = ({ data, onNodeClick, selectedId }) => {
@@ -154,18 +125,8 @@ const TreeVisualization: React.FC<TreeVisualizationProps> = ({ data, onNodeClick
 
     const nodes: LayoutNode[] = [];
     const links: LayoutLink[] = [];
-    computeLayout(data, 50, 50, nodes, links);
-
-    // Recompute child links with actual node positions
-    const childLinks = links.filter(l => l.type === 'child');
-    childLinks.forEach(link => {
-      const parentNode = nodes.find(n => n.x + NODE_W / 2 === link.source.x && n.y + NODE_H === link.source.y);
-      const childNode = nodes.find(n => n.x + NODE_W / 2 === link.target.x);
-      if (parentNode && childNode) {
-        link.source = { x: parentNode.x + NODE_W / 2, y: parentNode.y + NODE_H };
-        link.target = { x: childNode.x + NODE_W / 2, y: childNode.y };
-      }
-    });
+    placeNodes(data, 50, 50, nodes);
+    computeLinks(data, nodes, links);
 
     const maxX = Math.max(...nodes.map(n => n.x + NODE_W)) + 100;
     const maxY = Math.max(...nodes.map(n => n.y + NODE_H)) + 100;
