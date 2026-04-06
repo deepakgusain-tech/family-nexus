@@ -125,18 +125,8 @@ const TreeVisualization: React.FC<TreeVisualizationProps> = ({ data, onNodeClick
 
     const nodes: LayoutNode[] = [];
     const links: LayoutLink[] = [];
-    computeLayout(data, 50, 50, nodes, links);
-
-    // Recompute child links with actual node positions
-    const childLinks = links.filter(l => l.type === 'child');
-    childLinks.forEach(link => {
-      const parentNode = nodes.find(n => n.x + NODE_W / 2 === link.source.x && n.y + NODE_H === link.source.y);
-      const childNode = nodes.find(n => n.x + NODE_W / 2 === link.target.x);
-      if (parentNode && childNode) {
-        link.source = { x: parentNode.x + NODE_W / 2, y: parentNode.y + NODE_H };
-        link.target = { x: childNode.x + NODE_W / 2, y: childNode.y };
-      }
-    });
+    placeNodes(data, 50, 50, nodes);
+    computeLinks(data, nodes, links);
 
     const maxX = Math.max(...nodes.map(n => n.x + NODE_W)) + 100;
     const maxY = Math.max(...nodes.map(n => n.y + NODE_H)) + 100;
