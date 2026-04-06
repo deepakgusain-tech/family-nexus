@@ -238,6 +238,27 @@ const TreeVisualization: React.FC<TreeVisualizationProps> = ({ data, onNodeClick
         .attr('font-family', 'system-ui')
         .text(subtitle + yearText);
 
+      // Level badge
+      group.append('rect')
+        .attr('x', NODE_W - 28)
+        .attr('y', -8)
+        .attr('width', 32)
+        .attr('height', 18)
+        .attr('rx', 9)
+        .attr('fill', 'hsl(220, 15%, 20%)')
+        .attr('stroke', 'hsl(220, 15%, 35%)')
+        .attr('stroke-width', 1);
+
+      group.append('text')
+        .attr('x', NODE_W - 12)
+        .attr('y', 5)
+        .attr('text-anchor', 'middle')
+        .attr('fill', 'hsl(38, 75%, 55%)')
+        .attr('font-size', '10px')
+        .attr('font-weight', '700')
+        .attr('font-family', '"Space Grotesk", sans-serif')
+        .text(`L${node.level}`);
+
       // Hover effect
       group.on('mouseenter', function () {
         d3.select(this).select('rect:nth-child(2)')
