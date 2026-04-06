@@ -185,13 +185,14 @@ const TreeVisualization: React.FC<TreeVisualizationProps> = ({ data, onNodeClick
     const linkGroup = g.append('g').attr('class', 'links');
 
     links.forEach(link => {
+      const isOnPath = ancestorPath.has(link.sourceId) && ancestorPath.has(link.targetId);
       if (link.type === 'child') {
         const midY = (link.source.y + link.target.y) / 2;
         linkGroup.append('path')
           .attr('d', `M${link.source.x},${link.source.y} L${link.source.x},${midY} L${link.target.x},${midY} L${link.target.x},${link.target.y}`)
           .attr('fill', 'none')
-          .attr('stroke', 'hsl(220, 15%, 30%)')
-          .attr('stroke-width', 2);
+          .attr('stroke', isOnPath ? 'hsl(48, 95%, 55%)' : 'hsl(220, 15%, 30%)')
+          .attr('stroke-width', isOnPath ? 3.5 : 2);
       } else {
         linkGroup.append('line')
           .attr('x1', link.source.x)
