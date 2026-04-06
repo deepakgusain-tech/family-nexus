@@ -18,6 +18,7 @@ interface LayoutNode {
   type: 'person' | 'spouse';
   spouseType?: 'current' | 'ex';
   parentId?: string;
+  level: number;
 }
 
 interface LayoutLink {
@@ -32,7 +33,7 @@ const H_GAP = 40;
 const V_GAP = 120;
 const SPOUSE_GAP = 20;
 
-function placeNodes(node: FamilyNode, x: number, y: number, nodes: LayoutNode[]): number {
+function placeNodes(node: FamilyNode, x: number, y: number, nodes: LayoutNode[], level: number = 0): number {
   const spouseCount = node.spouses.length;
   const currentWives = node.spouses.filter(s => s.type === 'current');
   const exWives = node.spouses.filter(s => s.type === 'ex');
@@ -41,20 +42,20 @@ function placeNodes(node: FamilyNode, x: number, y: number, nodes: LayoutNode[])
 
   nodes.push({
     id: node.id, name: node.name, gender: node.gender, birthYear: node.birthYear,
-    x: personX, y, type: 'person',
+    x: personX, y, type: 'person', level,
   });
 
   currentWives.forEach((spouse, i) => {
     nodes.push({
       id: spouse.id, name: spouse.name, gender: spouse.gender, birthYear: spouse.birthYear,
-      x: personX - (i + 1) * (NODE_W + SPOUSE_GAP), y, type: 'spouse', spouseType: 'current', parentId: node.id,
+      x: personX - (i + 1) * (NODE_W + SPOUSE_GAP), y, type: 'spouse', spouseType: 'current', parentId: node.id, level,
     });
   });
 
   exWives.forEach((spouse, i) => {
     nodes.push({
       id: spouse.id, name: spouse.name, gender: spouse.gender, birthYear: spouse.birthYear,
-      x: personX + NODE_W + SPOUSE_GAP + i * (NODE_W + SPOUSE_GAP), y, type: 'spouse', spouseType: 'ex', parentId: node.id,
+      x: personX + NODE_W + SPOUSE_GAP + i * (NODE_W + SPOUSE_GAP), y, type: 'spouse', spouseType: 'ex', parentId: node.id, level,
     });
   });
 
@@ -66,7 +67,7 @@ function placeNodes(node: FamilyNode, x: number, y: number, nodes: LayoutNode[])
   const childWidths: number[] = [];
 
   node.children.forEach(child => {
-    const w = placeNodes(child, childX, childY, nodes);
+    const w = placeNodes(child, childX, childY, nodes, level + 1);
     childWidths.push(w);
     childX += w + H_GAP;
   });
@@ -236,6 +237,27 @@ const TreeVisualization: React.FC<TreeVisualizationProps> = ({ data, onNodeClick
         .attr('font-size', '11px')
         .attr('font-family', 'system-ui')
         .text(subtitle + yearText);
+
+      // Level badge
+      group.append('rect')
+        .attr('x', NODE_W - 28)
+        .attr('y', -8)
+        .attr('width', 32)
+        .attr('height', 18)
+        .attr('rx', 9)
+        .attr('fill', 'hsl(220, 15%, 20%)')
+        .attr('stroke', 'hsl(220, 15%, 35%)')
+        .attr('stroke-width', 1);
+
+      group.append('text')
+        .attr('x', NODE_W - 12)
+        .attr('y', 5)
+        .attr('text-anchor', 'middle')
+        .attr('fill', 'hsl(38, 75%, 55%)')
+        .attr('font-size', '10px')
+        .attr('font-weight', '700')
+        .attr('font-family', '"Space Grotesk", sans-serif')
+        .text(`L${node.level}`);
 
       // Hover effect
       group.on('mouseenter', function () {
