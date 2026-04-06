@@ -67,7 +67,7 @@ function placeNodes(node: FamilyNode, x: number, y: number, nodes: LayoutNode[],
   const childWidths: number[] = [];
 
   node.children.forEach(child => {
-    const w = placeNodes(child, childX, childY, nodes);
+    const w = placeNodes(child, childX, childY, nodes, level + 1);
     childWidths.push(w);
     childX += w + H_GAP;
   });
